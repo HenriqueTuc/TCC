@@ -1,0 +1,73 @@
+#include <Wire.h>
+
+uint8_t i2c_data[14];
+double accX, accY, accZ;
+double gyroX, gyroY, gyroZ;
+
+uint32_t timer;
+
+void setup(){
+
+ Serial.begin(9600);
+ Wire.begin();
+
+ #if ARDUINO >= 157
+   Wire.setClock(4000000UL);
+ #else
+   TWBR = ((F_CPU/4000000UL) - 16 / 2;
+ #endif
+
+  i2c_data[0] = 7;
+  i2c_data[1] = 0x00;
+  i2c_data[2] = 0x00;
+  i2c_data[3] = 0x00;
+
+  while(i2cWrite(0x19, i2c_data, 4, false));
+
+  while(i2cWrite(0x6B, 0x01, true));
+
+  while(i2cRead(0x75, i2c_data, 1));
+
+  if(i2c_data[0] != 0x68){
+    Serial.print("Erro. Placa desconhecida\n");
+    while(1){
+      Serial.print("Erro. Conecte a MPU6050 no barramento i2c\n");
+     }
+    }
+
+   delay(100);
+   
+  /* 1 - Leitura dos dados de Acc XYZ */
+  while(i2cRead(0x3B, i2c_data, 14));
+
+  /* 2 - Organizar os dados de Acc XYZ */
+  accX = (int16_t)((i2c_data[0] << 8) | i2c_data[1]); // ([ MSB ] [ LSB ])
+  accY = (int16_t)((i2c_data[2] << 8) | i2c_data[3]); // ([ MSB ] [ LSB ])
+  accZ = (int16_t)((i2c_data[4] << 8) | i2c_data[5]); // ([ MSB ] [ LSB ])
+
+   timer = micros();
+
+}
+void loop(){
+  
+ while(i2cRead(0X3B, i2c_data, 14));
+  /*Aceleração*/
+  accX = (int16_t)((i2c_data[0] << 8) | i2c_data[1]); // ([ MSB ] [ LSB ])
+  accY = (int16_t)((i2c_data[2] << 8) | i2c_data[3]); // ([ MSB ] [ LSB ])
+  accZ = (int16_t)((i2c_data[4] << 8) | i2c_data[5]); // ([ MSB ] [ LSB ])
+
+  /*Giroscópio*/
+  gyroX = (int16_t)((i2c_data[8] << 8) | i2c_data[9]); // ([ MSB ] [ LSB ])
+  gyroY = (int16_t)((i2c_data[10] << 8) | i2c_data[11]); // ([ MSB ] [ LSB ])
+  gyroZ = (int16_t)((i2c_data[12] << 8) | i2c_data[13]); // ([ MSB ] [ LSB ])
+
+  Serial.print("AccXYZ"); Serial.print("\t");
+  Serial.print(accX); Serial.print("\n");
+  Serial.print(accY); Serial.print("\t");
+  Serial.print(accZ); Serial.print("\n");
+  Serial.print("GiroXYZ"); Serial.print("\t");
+  Serial.print(gyroX); Serial.print("\t");
+  Serial.print(gyroY); Serial.print("\t");
+  Serial.print(gyroZ); Serial.print("\n");
+
+}
